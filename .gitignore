@@ -1,0 +1,11 @@
+cafe_data.json
+person_embeddings.pkl
+temp_faces/
+temp_video.mp4
+screenshot_*.jpg
+yolo26n.pt
+yolo26n-pose.pt
+yolo11n.pt
+__pycache__/
+*.pyc
+.DS_Store
