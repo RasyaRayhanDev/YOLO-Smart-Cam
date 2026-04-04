@@ -444,26 +444,22 @@ def main():
         
         with col2:
             avg_duration_7d = analytics.get_average_duration(7)
+            all_durations = [v["duration_minutes"] for v in analytics.data["visitor_durations"]]
             
             if is_tracking and "tracker" in st.session_state:
                 tracker = st.session_state.tracker
                 current_time = datetime.now().timestamp()
-                live_durations = []
                 
                 for person_id in set(data["person_id"] for data in tracker.tracker_time.values()):
                     if person_id in tracker.tracker_first_seen:
                         duration_minutes = (current_time - tracker.tracker_first_seen[person_id]) / 60
-                        live_durations.append(duration_minutes)
+                        all_durations.append(duration_minutes)
                     elif person_id in tracker.person_database:
                         duration_minutes = (current_time - tracker.person_database[person_id]["first_seen"]) / 60
-                        live_durations.append(duration_minutes)
-                
-                if live_durations:
-                    avg_live = sum(live_durations) / len(live_durations)
-                    if avg_duration_7d > 0:
-                        avg_duration_7d = (avg_duration_7d + avg_live) / 2
-                    else:
-                        avg_duration_7d = avg_live
+                        all_durations.append(duration_minutes)
+            
+            if all_durations:
+                avg_duration_7d = sum(all_durations) / len(all_durations)
             
             st.metric("Rata-rata Waktu di Cafe (7 hari)", f"{avg_duration_7d:.1f} menit")
         
