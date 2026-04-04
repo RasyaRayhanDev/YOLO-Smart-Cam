@@ -4,7 +4,6 @@ from ultralytics import YOLO
 import numpy as np
 from deepface import DeepFace
 import os
-from time import perf_counter
 from datetime import datetime, timedelta
 import json
 import pandas as pd
@@ -183,7 +182,7 @@ class CafeTrackerStreamlit:
             if person_crop.size == 0:
                 return None
             
-            temp_path = os.path.join(self.temp_face_dir, f"temp_face_{perf_counter()}.jpg")
+            temp_path = os.path.join(self.temp_face_dir, f"temp_face_{datetime.now().timestamp()}.jpg")
             cv2.imwrite(temp_path, person_crop)
             
             try:
@@ -292,7 +291,7 @@ class CafeTrackerStreamlit:
     def process_frame(self, frame):
         results = self.model.track(frame, persist=True, classes=[0], verbose=False)
         pose_results = self.pose_model(frame, verbose=False)
-        current_time = perf_counter()
+        current_time = datetime.now().timestamp()
         
         active_persons = set()
         
@@ -452,12 +451,15 @@ def main():
             
             if is_tracking and "tracker" in st.session_state:
                 tracker = st.session_state.tracker
-                current_time = perf_counter()
+                current_time = datetime.now().timestamp()
                 live_durations = []
                 
                 for person_id in set(data["person_id"] for data in tracker.tracker_time.values()):
                     if person_id in tracker.tracker_first_seen:
                         duration_minutes = (current_time - tracker.tracker_first_seen[person_id]) / 60
+                        live_durations.append(duration_minutes)
+                    elif person_id in tracker.person_database:
+                        duration_minutes = (current_time - tracker.person_database[person_id]["first_seen"]) / 60
                         live_durations.append(duration_minutes)
                 
                 if live_durations:
@@ -506,12 +508,15 @@ def main():
             
             if is_tracking and "tracker" in st.session_state:
                 tracker = st.session_state.tracker
-                current_time = perf_counter()
+                current_time = datetime.now().timestamp()
                 live_durations = []
                 
                 for person_id in set(data["person_id"] for data in tracker.tracker_time.values()):
                     if person_id in tracker.tracker_first_seen:
                         duration_minutes = (current_time - tracker.tracker_first_seen[person_id]) / 60
+                        live_durations.append(duration_minutes)
+                    elif person_id in tracker.person_database:
+                        duration_minutes = (current_time - tracker.person_database[person_id]["first_seen"]) / 60
                         live_durations.append(duration_minutes)
                 
                 if live_durations:
