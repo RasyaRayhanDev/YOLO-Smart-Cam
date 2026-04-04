@@ -423,18 +423,14 @@ def main():
     
     st.title("☕ Cafe Analytics Dashboard")
     
+    analytics = CafeAnalytics()
+    is_tracking = "tracker" in st.session_state and st.session_state.get("tracking_active", False)
+    
     tab1, tab2 = st.tabs(["📊 Analytics", "📹 Live Tracking"])
     
     with tab1:
-        analytics = CafeAnalytics()
-        
-        is_tracking = "tracker" in st.session_state and st.session_state.get("tracking_active", False)
-        
         if is_tracking:
-            st.success("🔴 LIVE - Buka tab ini saat tracking untuk melihat data real-time")
-            import time
-            time.sleep(2)
-            st.rerun()
+            st.success("🔴 LIVE - Data di-update otomatis setiap 2 detik")
         
         col1, col2, col3 = st.columns(3)
         
@@ -443,7 +439,6 @@ def main():
             st.metric("Rata-rata Pengunjung/Hari (7 hari)", f"{avg_visitors_7d:.1f}")
         
         with col2:
-            avg_duration_7d = analytics.get_average_duration(7)
             all_durations = [v["duration_minutes"] for v in analytics.data["visitor_durations"]]
             
             if is_tracking and "tracker" in st.session_state:
@@ -458,6 +453,7 @@ def main():
                         duration_minutes = (current_time - tracker.person_database[person_id]["first_seen"]) / 60
                         all_durations.append(duration_minutes)
             
+            avg_duration_7d = 0.0
             if all_durations:
                 avg_duration_7d = sum(all_durations) / len(all_durations)
             
@@ -583,7 +579,7 @@ def main():
             metrics_placeholder = st.empty()
             
             frame_count = 0
-            max_frames = 300
+            max_frames = 60
             
             while st.session_state.tracking_active and frame_count < max_frames:
                 success, frame = cap.read()
