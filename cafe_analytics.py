@@ -423,19 +423,15 @@ def main():
     
     st.title("☕ Cafe Analytics Dashboard")
     
-    if "active_tab" not in st.session_state:
-        st.session_state.active_tab = "Analytics"
-    
     tab1, tab2 = st.tabs(["📊 Analytics", "📹 Live Tracking"])
     
     with tab1:
-        st.session_state.active_tab = "Analytics"
         analytics = CafeAnalytics()
         
         is_tracking = "tracker" in st.session_state and st.session_state.get("tracking_active", False)
         
         if is_tracking:
-            st.success("🔴 LIVE - Data di-update otomatis")
+            st.success("🔴 LIVE - Buka tab ini saat tracking untuk melihat data real-time")
             import time
             time.sleep(2)
             st.rerun()
@@ -551,7 +547,6 @@ def main():
                 st.dataframe(df_daily, use_container_width=True)
     
     with tab2:
-        st.session_state.active_tab = "Live Tracking"
         st.subheader("🎥 Live Tracking dari Webcam")
         
         source = 0
