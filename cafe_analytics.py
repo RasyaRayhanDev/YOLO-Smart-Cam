@@ -40,7 +40,30 @@ class CafeAnalytics:
         
         self.data["visitor_durations"].append({
             "date": today,
-            "duration_minutes": duration_seconds / 60
+            "duration_minutes": duration_seconds / 60,
+            "person_id": None
+        })
+        
+        self.save_data()
+    
+    def update_active_visitor(self, person_id, duration_seconds):
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        for visitor in self.data["visitor_durations"]:
+            if visitor.get("person_id") == person_id and visitor["date"] == today:
+                visitor["duration_minutes"] = duration_seconds / 60
+                self.save_data()
+                return
+        
+        if today not in self.data["daily_visitors"]:
+            self.data["daily_visitors"][today] = 0
+        
+        self.data["daily_visitors"][today] += 1
+        
+        self.data["visitor_durations"].append({
+            "date": today,
+            "duration_minutes": duration_seconds / 60,
+            "person_id": person_id
         })
         
         self.save_data()
@@ -97,6 +120,7 @@ class CafeTrackerStreamlit:
         self.completed_visitors = []
         self.person_colors = {}
         self.person_activities = {}
+        self.last_json_update = 0
         
         self.temp_face_dir = "temp_faces"
         os.makedirs(self.temp_face_dir, exist_ok=True)
@@ -416,6 +440,17 @@ class CafeTrackerStreamlit:
         for track_id in inactive_tracks:
             del self.tracker_time[track_id]
         
+        if current_time - self.last_json_update > 5:
+            for person_id in active_persons:
+                if person_id in self.tracker_first_seen:
+                    duration = current_time - self.tracker_first_seen[person_id]
+                else:
+                    duration = current_time - self.person_database[person_id]["first_seen"]
+                
+                self.analytics.update_active_visitor(person_id, duration)
+            
+            self.last_json_update = current_time
+        
         return frame
 
 def main():
@@ -439,7 +474,7 @@ def main():
             st.metric("Rata-rata Pengunjung/Hari (7 hari)", f"{avg_visitors_7d:.1f}")
         
         with col2:
-            all_durations = [v["duration_minutes"] for v in analytics.data["visitor_durations"]]
+            all_durations_seconds = [v["duration_minutes"] * 60 for v in analytics.data["visitor_durations"]]
             
             if is_tracking and "tracker" in st.session_state:
                 tracker = st.session_state.tracker
@@ -447,19 +482,19 @@ def main():
                 
                 for person_id in set(data["person_id"] for data in tracker.tracker_time.values()):
                     if person_id in tracker.tracker_first_seen:
-                        duration_minutes = (current_time - tracker.tracker_first_seen[person_id]) / 60
-                        all_durations.append(duration_minutes)
+                        duration_seconds = current_time - tracker.tracker_first_seen[person_id]
+                        all_durations_seconds.append(duration_seconds)
                     elif person_id in tracker.person_database:
-                        duration_minutes = (current_time - tracker.person_database[person_id]["first_seen"]) / 60
-                        all_durations.append(duration_minutes)
+                        duration_seconds = current_time - tracker.person_database[person_id]["first_seen"]
+                        all_durations_seconds.append(duration_seconds)
             
-            avg_duration_minutes = 0.0
-            if all_durations:
-                avg_duration_minutes = sum(all_durations) / len(all_durations)
+            avg_duration_seconds = 0.0
+            if all_durations_seconds:
+                avg_duration_seconds = sum(all_durations_seconds) / len(all_durations_seconds)
             
-            avg_hours = int(avg_duration_minutes // 60)
-            avg_mins = int(avg_duration_minutes % 60)
-            avg_secs = int((avg_duration_minutes * 60) % 60)
+            avg_hours = int(avg_duration_seconds // 3600)
+            avg_mins = int((avg_duration_seconds % 3600) // 60)
+            avg_secs = int(avg_duration_seconds % 60)
             
             if avg_hours > 0:
                 duration_str = f"{avg_hours}h {avg_mins}m {avg_secs}s"
