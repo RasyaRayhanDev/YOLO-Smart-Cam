@@ -426,12 +426,6 @@ class CafeTrackerStreamlit:
             if current_time - data["last_seen"] > 10:
                 person_id = data["person_id"]
                 if person_id not in active_persons and person_id not in self.completed_visitors:
-                    if person_id in self.tracker_first_seen:
-                        total_duration = current_time - self.tracker_first_seen[person_id]
-                    else:
-                        total_duration = current_time - self.person_database[person_id]["first_seen"]
-                    
-                    self.analytics.add_visitor(total_duration)
                     self.completed_visitors.append(person_id)
                     self.save_embeddings()
                 
